@@ -34,15 +34,19 @@ jobs:
       - name: Build Windows (release)
         run: flutter build windows --release
 
-      - name: Compress Release
+      - name: Check Release Folder
         shell: pwsh
         run: |
           if (Test-Path -Path build\windows\runner\Release) {
-            Compress-Archive -Path build\windows\runner\Release\* -DestinationPath var_ps-windows-release.zip -Force
+            Write-Host "Release folder exists ✅"
           } else {
-            Write-Error 'Release folder not found. Ensure build succeeded.'
+            Write-Error "Release folder not found. Build might have failed."
             exit 1
           }
+
+      - name: Compress Release
+        shell: pwsh
+        run: Compress-Archive -Path build\windows\runner\Release\* -DestinationPath var_ps-windows-release.zip -Force
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
