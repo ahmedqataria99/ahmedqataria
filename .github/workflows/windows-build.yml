@@ -1,0 +1,58 @@
+name: Build Windows Release
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Cache Pub
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build Windows (release)
+        run: flutter build windows --release
+
+      - name: Compress Release
+        shell: pwsh
+        run: |
+          if (Test-Path -Path build\windows\runner\Release) {
+            Compress-Archive -Path build\windows\runner\Release\* -DestinationPath var_ps-windows-release.zip -Force
+          } else {
+            Write-Error 'Release folder not found. Ensure build succeeded.'
+            exit 1
+          }
+
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: var_ps-windows-release
+          path: var_ps-windows-release.zip
+
+      - name: Upload Raw Release Folder (optional)
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: var_ps-windows-release-folder
+          path: build/windows/runner/Release
