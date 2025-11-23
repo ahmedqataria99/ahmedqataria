@@ -1,4 +1,4 @@
-name: Build Windows Release
+name: Build and Release Windows
 
 on:
   push:
@@ -9,7 +9,7 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Flutter
@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze
+      - name: Analyze code
         run: flutter analyze
 
       - name: Build Windows (release)
@@ -44,15 +44,26 @@ jobs:
             exit 1
           }
 
-      - name: Upload Release Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: var_ps-windows-release
           path: var_ps-windows-release.zip
 
-      - name: Upload Raw Release Folder (optional)
-        if: always()
-        uses: actions/upload-artifact@v3
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
         with:
-          name: var_ps-windows-release-folder
-          path: build/windows/runner/Release
+          tag_name: v${{ github.run_number }}
+          name: Windows Release v${{ github.run_number }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: var_ps-windows-release.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
