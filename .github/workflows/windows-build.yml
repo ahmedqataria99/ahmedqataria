@@ -8,15 +8,23 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+
     steps:
-      - name: Checkout code
+      # Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Set up Flutter
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v3
         with:
           flutter-version: '3.32.7'
 
+      # Check Flutter installation and dependencies
+      - name: Flutter Doctor
+        run: flutter doctor -v
+
+      # Cache Pub
       - name: Cache Pub
         uses: actions/cache@v4
         with:
@@ -25,15 +33,19 @@ jobs:
             .dart_tool
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
 
+      # Install dependencies
       - name: Install dependencies
         run: flutter pub get
 
+      # Analyze code
       - name: Analyze code
         run: flutter analyze
 
-      - name: Build Windows (release)
+      # Build Windows (release)
+      - name: Build Windows Release
         run: flutter build windows --release
 
+      # List build folder for debugging
       - name: List Windows Build Folder
         shell: pwsh
         run: |
@@ -45,6 +57,7 @@ jobs:
             exit 1
           }
 
+      # Check Release folder exists
       - name: Check Release Folder
         shell: pwsh
         run: |
@@ -55,16 +68,19 @@ jobs:
             exit 1
           }
 
+      # Compress Release folder
       - name: Compress Release
         shell: pwsh
         run: Compress-Archive -Path build\windows\runner\Release\* -DestinationPath var_ps-windows-release.zip -Force
 
+      # Upload Artifact
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: var_ps-windows-release
           path: var_ps-windows-release.zip
 
+      # Create GitHub Release
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -76,6 +92,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Upload Release Asset
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
